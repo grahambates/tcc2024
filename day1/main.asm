@@ -62,7 +62,6 @@ _start:
                 moveq   #TREE_TRIS-1,d7
 .l:
                 ; Outline triangle path
-                move.l  a4,a1           ; restore rastport
                 move.w  d5,d0           ; x
                 move.w  d6,d1           ; y
                 jsr     _LVOMove(a6)
@@ -89,10 +88,10 @@ _start:
 
                 add.w   #TREE_VSTEP,d6
                 addq    #TREE_HSTEP,d4
+                move.l  a4,a1           ; restore rastport
                 dbf     d7,.l
 
                 ; White pen
-                move.l  a4,a1           ; restore rastport
                 moveq   #2,d0
                 jsr     _LVOSetAPen(a6)
 
