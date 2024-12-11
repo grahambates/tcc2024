@@ -14,7 +14,7 @@ TREE_TRIS = 5
 TREE_VSTEP = 25
 TREE_HSTEP = 7
 
-                ; Ensure all data in in chip RAM
+                ; Ensure all data is in chip RAM
                 code_c
 
 _start:
@@ -38,7 +38,7 @@ _start:
                 lea     TmpBuffer(pc),a3
                 move.l  a3,(a2)
                 lea     sc_RastPort(a5),a1
-                move.l  a1,a4           ; stack rastport for quick restore
+                move.l  a1,a4           ; stash rastport for quick restore
                 move.l  a2,rp_TmpRas(a1)
 
                 jsr     _LVOClearScreen(a6)
