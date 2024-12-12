@@ -23,9 +23,9 @@ _start:
 
                 move.w  #H-1,d7         ; y desc
 .y:
-                moveq   #0,d0           ; x
-                move.w  #W/16-1,d6      ; x bit desc
-.xbyte:
+                moveq   #0,d0           ; x asc
+                move.w  #W/16-1,d6      ; x word desc
+.xword:
                 moveq   #0,d4           ; word value
                 moveq   #1,d3           ; current bit
                 moveq   #16-1,d5
@@ -43,7 +43,7 @@ _start:
                 addq    #1,d0
                 dbf     d5,.xbit
                 move.w  d4,-(a0)
-                dbf     d6,.xbyte
+                dbf     d6,.xword
                 dbf     d7,.y
 
                 add.w   #16,d2
