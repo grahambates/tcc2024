@@ -1,7 +1,6 @@
-build/*
 .DS_Store
 node_modules
-out/*
+*/out/*
 obj/*
 *.d
 *.hunk

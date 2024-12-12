@@ -1,11 +1,8 @@
-                incdir  "include"
+                incdir  "../include"
                 include "graphics/graphics_lib.i"
                 include "graphics/rastport.i"
                 include "intuition/screens.i"
 
-                ifnd    BSS
-BSS = 1
-                endc
 W = 640
 H = 256
 
@@ -129,8 +126,9 @@ Trunk:
 Tmp:            dc.l    0               ; buffer ptr
 Colors:
                 dc.w    $000,$0f0,$fff
+
+                printt  "code bytes:"
+                printv  *
 TmpBuffer:      
-                ; Uses header hack on final build
-                ifne    BSS
+                ; This gets removed with truncation script
                 ds.b    1024*64
-                endc

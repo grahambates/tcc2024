@@ -1,0 +1,18 @@
+http://amiga-dev.wikidot.com/file-format:hunk#toc0
+
+0000 03f3    HUNK_HEADER [0x3F3]
+0000 0000    strings 		A number of resident library names.
+0000 0001    uint32 		Table size. The highest hunk number plus one.
+0000 0000    uint32 	F 	First hunk. The first hunk that should be used in loading.
+0000 0000    uint32 	L 	Last hunk. The last hunk that should be used in loading.
+
+4000 4036    uint32 * (L-F+1) 		A list of hunk sizes.
+             Two highest bits = flags to pass to AllocMem.
+             1<<30 = Chip (4000 0000)
+
+0000 03e9    HUNK_CODE [0x3E9]
+0000 0036    uint32 	N 	The number of longwords of code.
+
+...          uint32 * N 		Machine code.
+
+0000 03f2    HUNK_END [0x3F2]
