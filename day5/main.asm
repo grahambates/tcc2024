@@ -37,15 +37,15 @@ _start:
                 move.l  a4,CopBPl0H-Cop(a0)
 
 Precalc:
-                move.w  #DIW_W/4,d3
+                move.w  #DIW_W/8,d3
                 lea     Tbl(pc),a0
                 move.l  a0,a3
-                move.w  #DIW_H/2-1,d7
+                move.w  #DIW_H/4-1,d7
 .preY:
-                move.w  #DIW_W/2-1,d6
+                move.w  #DIW_W/4-1,d6
 .preX:
                 move.w  d7,d0           ; dy
-                sub.w   #DIW_H/4,d0
+                sub.w   #DIW_H/8,d0
                 bgt     .posY   
                 neg.w   d0              
 .posY:
@@ -101,23 +101,26 @@ Frame:
 ; Alternate plot method:
                 move.w  #DIW_H/2-1,d7   ; y desc
 .y:
-                suba.w  #DIW_BW,a0
+                suba.w  #DIW_BW*2,a0
                 moveq   #0,d0           ; x
                 move.w  #DIW_W/8-1,d6   ; x bit desc
 .xbyte:
                 clr.b   -(a0)
-                moveq   #4-1,d5
+                moveq   #2-1,d5
 .xbit:
                 movem.w (a5)+,d1/d3
-                add.w   d2,d1
                 add.w   d2,d3
+                and.w   d2,d3
+                add.w   d2,d1
                 eor.w   d3,d1
-                and.w   d4,d1
 
-                bne.s   .noPlot
+                cmp.b   d0,d1
+                bhi     .noPlot
+                ; and.w   d4,d1
+                ; bne.s   .noPlot
                 bset    d0,(a0)
 .noPlot:
-                addq    #2,d0
+                addq    #4,d0
                 dbf     d5,.xbit
                 dbf     d6,.xbyte
                 dbf     d7,.y
