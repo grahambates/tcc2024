@@ -13,7 +13,7 @@ VASM = $(BIN_DIR)/vasmm68k_mot
 FSUAE = /Applications/FS-UAE.app/Contents/MacOS/fs-uae
 
 VASMFLAGS = -m68000 -nowarn=62 -x -opt-size -showopt
-FSUAEFLAGS = --floppy_drive_0_sounds=off --automatic_input_grab=0  --chip_memory=$(CHIPMEM) --fast_memory=$(FASTMEM) --slow_memory=$(SLOWMEM) --amiga_model=$(MODEL)
+FSUAEFLAGS = --floppy_drive_0_sounds=off --automatic_input_grab=0  --chip_memory=$(CHIPMEM) --fast_memory=$(FASTMEM) --slow_memory=$(SLOWMEM) --amiga_model=$(MODEL) --console_debugger=1
 
 # generic exe path used in startup-sequence - current build is copied here to run
 prog_exe = $(program).exe
