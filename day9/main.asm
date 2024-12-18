@@ -3,10 +3,7 @@
 ; shift left, xor previous bit 0 with carry
 ; Produces a looping sequence of numbers. Use these as indexes in scrambled palette order.
 ;
-; 01:  0 0 0 1 
-; 03:  0 0 1 1
-; 07:  0 1 1 1
-; 15:  1 1 1 1
+; 15:  1 1 1 1     start with filled buffer
 ; 14:  1 1 1 0
 ; 13:  1 1 0 1 
 ; 10:  1 0 1 0 
@@ -18,8 +15,11 @@
 ; 02:  0 0 1 0 
 ; 04:  0 1 0 0 
 ; 08:  1 0 0 0 
+; 01:  0 0 0 1 
+; 03:  0 0 1 1
+; 07:  0 1 1 1
 
-; 304
+; 332/368
                 incdir  "../include"
                 include "hw.i"
                 include "graphics/graphics_lib.i"
@@ -28,6 +28,9 @@
 
 BLT_H = 16
 BLT_BW = 4
+
+SIN_LEN = 512 
+SIN_SHIFT = 7
 
 ; Can specify our own display window and screen sizes:
 DIW_W = 320
@@ -39,7 +42,7 @@ SCREEN_W = DIW_W
 SCREEN_BW = SCREEN_W/8
 SCREEN_H = DIW_H
 
-SCREEN_SIZE = SCREEN_BW*SCREEN_H*BPLS
+SCREEN_SIZE = SCREEN_BW*SCREEN_H*(BPLS+1) ; extra bitplane for shift
 
 DIW_SIZE = DIW_BW*DIW_H*BPLS
 DIW_XSTRT = ($242-DIW_W)/2
@@ -57,7 +60,7 @@ SCREEN_ADDR = $60000
 
 ; Custom register offset
 ; By Setting a6 to a specific register, rather than $dff000, we save 4 bytes accessing that register without an offset.
-C = dmacon
+C = bltsize
 
 ********************************************************************************
                 code_c
@@ -73,10 +76,20 @@ C = dmacon
 ; a5 - pointer to a "caller" service routine
 ; a6 - pointer to a "returner" service routine
 _start:
-                lea     custom+diwstrt,a6
-                ; Set window size (smaller than setting in copper)
-                move.l  #DIW_STRT<<16!DIW_STOP,(a6)+
-                move.l  #DDF_STRT<<16!DDF_STOP,(a6)+
+                lea     Sin(pc),a0
+PrecalcSin:
+                moveq   #0,d0
+                move.w  #SIN_LEN/2+1,d2
+.sin:           subq    #2,d2
+                move.w  d0,d1
+                asr.w   #SIN_SHIFT,d1   ; this determines the amplitude
+                move.w  d1,(a0)+
+                neg.w   d1
+                move.w  d1,SIN_LEN-2(a0)
+                add.w   d2,d0
+                bne.b   .sin
+
+                lea     custom+C,a6
                 ; install copper
                 lea     Copper(pc),a1
                 move.l  a1,cop1lc-C(a6)
@@ -95,28 +108,47 @@ _start:
 
                 move.w  #DMAF_SETCLR!DMAF_BLITHOG,dmacon-C(a6) ; Blitter priority to avoid waits
 
-                ; Fill bpl0
-                lea     SCREEN_BW*4(a0),a1
+                ; fill buffer for intial state
                 move.w  #$1ff,bltcon0-C(a6)
-                move.w  #SCREEN_BW*BPLS,bltdmod-C(a6)
-                move.l  a1,bltdpt-C(a6)
-                move.w  #SCREEN_H*64+SCREEN_BW/2,bltsize-C(a6)
-                ; Should really clear other planes
+                clr.w   bltdmod-C(a6)
+                move.l  a0,bltdpt-C(a6)
+                move.w  #SCREEN_H*3*64+SCREEN_BW,bltsize-C(a6)
+
+                ; moveq   #0,d6           ; frame
 
 Frame:
 .vsync:         cmp.b   #$ff,vhposr-C(a6)
                 bne.b   .vsync
 
-                lea     SCREEN_BW*20*(BPLS+1)+6(a0),a1 ; src/dest byte offset
+                lea     (SCREEN_BW*(BPLS+1)*(SCREEN_H-BLT_H)/2)+(SCREEN_BW-BLT_BW)/2(a0),a1 ; src/dest byte offset
 
-                move.l  #$00ffff00,d1   ; mask to be shifted
+                ; x sin
+                lea     Sin(pc),a2
+                move.w  d6,d0
+                mulu    #11,d0
+                and.w   #(SIN_LEN-1)*2,d0
+                move.w  (a2,d0),d5
+                move.w  d5,d2
+                asr.w   #4,d2
+                add.w   d2,d2
+                adda.w  d2,a1
+
+                ; y sin
+                move.w  d6,d0
+                mulu    #5,d0
+                and.w   #(SIN_LEN-1)*2,d0
+                move.w  (a2,d0),d0
+                mulu    #SCREEN_BW*(BPLS+1),d0
+                adda.l  d0,a1
+
+                moveq   #-1,d1
+                clr.w   d1              ; #$ffff0000 mask to be shifted
+                and.w   #$f,d5
+                lsr.l   d5,d1
                 move.l  d1,bltafwm-C(a6)
-                move.l  #(SCREEN_BW-BLT_BW)<<16!(SCREEN_BW-BLT_BW),d4
-
-                ; TODO: shouldn't need extra bpl now
-                ; can just copy with 1 extra line in tmp
 
                 ; Shift all bpls into tmp:
+                move.l  #(SCREEN_BW-BLT_BW)<<16!(SCREEN_BW-BLT_BW),d4
                 lea     SCREEN_BW(a1),a2
                 lea     BlitTmp(pc),a3
                 move.w  #$9f0,bltcon0-C(a6) ; bltcon1 ok?
@@ -143,16 +175,21 @@ Frame:
                 move.l  a1,bltdpt-C(a6)
                 move.w  #BLT_H*(BPLS+1)*64+BLT_BW/2,bltsize-C(a6)
 
+                addq    #1,d6
                 bra     Frame
 
 ; Scrambled palette order
 PalIndexes:
-                dc.b    0,1*2,3*2,7*2,15*2,14*2,13*2,10*2,5*2,11*2,6*2,12*2,9*2,2*2,4*2,8*2
+                dc.b    0,15*2,14*2,13*2,10*2,5*2,11*2,6*2,12*2,9*2,2*2,4*2,8*2,1*2,3*2,7*2
 
 ;-------------------------------------------------------------------------------
 Copper:
                 dc.w    dmacon,DMAF_SPRITE ; sprites off
                 ; dc.w    intena,$7fff    ; all interrupts off
+                dc.w    diwstrt,DIW_STRT
+                dc.w    diwstop,DIW_STOP
+                ; dc.w    ddfstrt,DDF_STRT
+                ; dc.w    ddfstop,DDF_STOP
                 dc.w    bpl0ptl,SCREEN_BW*4
                 dc.w    bpl1ptl,SCREEN_BW*3
                 dc.w    bpl2ptl,SCREEN_BW*2
@@ -162,5 +199,6 @@ Copper:
                 dc.w    bpl2mod,SCREEN_BW*BPLS
                 ; dc.w    -1
 
+Sin:            ds.w    SIN_LEN*2
 BlitTmp:
                 ds.b    SCREEN_SIZE
