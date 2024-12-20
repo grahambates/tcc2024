@@ -109,14 +109,15 @@ Frame:
                 moveq   #4-1,d5
 .xbit:
                 movem.w (a5)+,d1/d3
-                add.w   d2,d1
                 add.w   d2,d3
+                and.w   d2,d3
+                add.w   d2,d1
                 eor.w   d3,d1
 
-                ; cmp.b   d0,d1
-                ; bhi     .noPlot
-                and.w   d4,d1
-                bne.s   .noPlot
+                cmp.b   d0,d1
+                bhi     .noPlot
+                ; and.w   d4,d1
+                ; bne.s   .noPlot
                 bset    d0,(a0)
 .noPlot:
                 addq    #2,d0
