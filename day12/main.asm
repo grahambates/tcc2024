@@ -76,7 +76,7 @@ PrecalcSin:
                 move.l  a0,cop1lc-C(a6)
 
                 lea     CopperGrad(pc),a1
-                move.l  #$2cdffffe,(a4)
+                move.l  #$2c01fffe,(a4)
                 move.w  #SCREEN_H-32-1,d7
 .copl:
                 move.l  (a4),(a1)+
