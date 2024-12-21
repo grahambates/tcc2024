@@ -75,20 +75,22 @@ PrecalcSin:
                 lea     Copper(pc),a0
                 move.l  a0,cop1lc-C(a6)
 
-                lea     CopperGrad(pc),a0
-                move.w  #$2cdf,d0
-                move.w  #SCREEN_H-1,d7
+                lea     CopperGrad(pc),a1
+                move.l  #$2cdffffe,(a4)
+                move.w  #SCREEN_H-32-1,d7
 .copl:
-                move.w  d0,(a0)+
-                move.w  #$fffe,(a0)+
-                move.w  #color00,(a0)+
+                move.l  (a4),(a1)+
+                move.w  #color00,(a1)+
                 move.w  d7,d3
+                move.w  d7,d5
+                and.w   d4,d5
+                lsl.w   #3,d5
+                add.w   d5,d3
                 lsr.w   #4,d3
-                move.w  d3,(a0)+
-                add.w   #$100,d0
+                move.w  d3,(a1)+
+                addq.b  #1,(a4)
                 dbf     d7,.copl
 
-                ; moveq   #0,d0           ; frame
 Frame:
 .vsync:         cmp.b   #$ff,vhposr-C(a6)
                 bne.b   .vsync
@@ -98,17 +100,17 @@ Frame:
 
                 ; clear
                 move.l  (a3),a0
-                move.w  #SCREEN_BW*SCREEN_H/4-1,d7
+                move.w  #SCREEN_BW*SCREEN_H/4-1,d6
 .clr:           clr.l   (a0)+
-                dbf     d7,.clr
+                dbf     d6,.clr
 
-                lea     SCREEN_BW/2-SCREEN_BW*240(a0),a1
+                lea     SCREEN_BW/2-SCREEN_BW*240(a0),a0
 
                 lea     Sin(pc),a2
                 lea     SIN_LEN/2(a2),a4 ; cos
-                move.w  d0,d1           ; angle
+                move.w  d7,d1           ; angle
                 moveq   #15,d5          ; multiplier
-                move.w  #224-1,d7
+                move.w  #224-1,d6
 .l:
                 and.w   #(SIN_LEN-1)*2,d1
                 move.w  (a2,d1),d2
@@ -123,28 +125,25 @@ Frame:
                 lsl.w   #5,d4           ; mulu    #SCREEN_BW,d4
                 add.w   d4,d3
                 not.w   d2
-                bset    d2,(a1,d3)
+                bset    d2,(a0,d3)
                 add.w   #20,d1
                 addq    #8,d5
-                lea     SCREEN_BW(a1),a1
-                dbf     d7,.l
-
-                addq    #2,d0
+                lea     SCREEN_BW(a0),a0
+                dbf     d6,.l
 
                 ; CPU sets upper word of bpl ptr to flip buffer
                 move.w  (a3),bpl0pt-C(a6)
-                bra.b   Frame
+                dbf     d7,Frame
 
 ;-------------------------------------------------------------------------------
 Copper:
                 dc.w    dmacon,DMAF_SPRITE ; sprites off
-                dc.w    intena,$7fff    ; all interrupts off
+                ; dc.w    intena,$7fff    ; all interrupts off
                 dc.w    bpl0ptl,SCREEN_ADDR&$ffff ; Copper sets lower word of bpl ptr
                 dc.w    bplcon0,BPLS<<12!$200
                 dc.w    color01,$0f0
 CopperGrad:
                 ds.w    SCREEN_H*4
-
 
 Sin:            ds.w    SIN_LEN*3
 
