@@ -1,6 +1,6 @@
 ********************************************************************************
-; Double buffered display using custom RastPort
-; Allows use of graphics library draw routines, and custom screen geometry
+; Double buffered display using custom screen
+; No use of OS
 
                 incdir  "../include"
                 include "hw.i"
